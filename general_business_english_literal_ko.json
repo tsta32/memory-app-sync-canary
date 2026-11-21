@@ -7,7 +7,7 @@
       "source_line": 1,
       "en": "Are you available to talk now?",
       "ko_before": "지금 대화(통화) 가능하신가요?",
-      "ko_after": "지금 대화할 수 있으신가요?",
+      "ko_after": "격리된 자동 동기화 검증용 번역 44947030168-1",
       "context": "현재대화 가능여부확인",
       "priority": "essential",
       "businessTemplateKey": "business-general-001"

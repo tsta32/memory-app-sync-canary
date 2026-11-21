@@ -6,7 +6,7 @@ var items=[
     "key": "business-general-001",
     "source_line": 1,
     "en": "Are you available to talk now?",
-    "ko": "지금 대화할 수 있으신가요?",
+    "ko": "격리된 자동 동기화 검증용 번역 44947030168-1",
     "context": "현재대화 가능여부확인",
     "ko_before": "지금 대화(통화) 가능하신가요?",
     "priority": "essential",
@@ -190,7 +190,9 @@ var items=[
     "context": "상대화면 공유요청",
     "ko_before": "화면을 공유해 주시겠어요?",
     "priority": "important",
-    "legacyPriorityDefaults": ["essential"],
+    "legacyPriorityDefaults": [
+      "essential"
+    ],
     "purpose": "화면 공유 요청",
     "criteria": [
       1
@@ -361,7 +363,9 @@ var items=[
     "context": "다음안건 전환제안",
     "ko_before": "다음 항목으로 넘어가겠습니다.",
     "priority": "important",
-    "legacyPriorityDefaults": ["essential"],
+    "legacyPriorityDefaults": [
+      "essential"
+    ],
     "purpose": "다음 항목 진행 제안",
     "criteria": [
       1,
@@ -521,7 +525,9 @@ var items=[
     "context": "누락사항 확인질문",
     "ko_before": "제가 놓친 내용이 있나요?",
     "priority": "important",
-    "legacyPriorityDefaults": ["essential"],
+    "legacyPriorityDefaults": [
+      "essential"
+    ],
     "purpose": "누락 확인",
     "criteria": [
       1,
@@ -1934,9 +1940,14 @@ var items=[
     "context": "업무파일 갱신완료알림",
     "ko_before": "파일을 업데이트했습니다.",
     "priority": "essential",
-    "legacyPriorityDefaults": ["important"],
+    "legacyPriorityDefaults": [
+      "important"
+    ],
     "purpose": "파일 수정 완료 보고",
-    "criteria": [1, 2],
+    "criteria": [
+      1,
+      2
+    ],
     "reason": "수정한 파일 상태를 명시해 자료 작업의 완료와 전달 여부를 상대가 판단하게 한다. 파일 자체의 변경 완료는 다른 업무 전반에 쓰이는 진행 알림과 구별되며, 다음 조치에 필요한 산출물 상태를 직접 보고한다.",
     "coverageAreas": [
       "materials",
@@ -2226,9 +2237,14 @@ var items=[
     "context": "문제원인 조사중보고",
     "ko_before": "현재 원인을 파악 중입니다.",
     "priority": "essential",
-    "legacyPriorityDefaults": ["important"],
+    "legacyPriorityDefaults": [
+      "important"
+    ],
     "purpose": "문제 원인 조사 보고",
-    "criteria": [1, 2],
+    "criteria": [
+      1,
+      2
+    ],
     "reason": "문제가 발생한 뒤 원인을 조사 중이라고 알리면 상대의 해결 기대와 후속 대응을 조율할 수 있다. 원인을 아직 단정하지 않으면서 문제 대응의 핵심 단계를 분명히 보고하는 표현이다.",
     "coverageAreas": [
       "problem"
@@ -2290,9 +2306,14 @@ var items=[
     "context": "현재업무 계획대로진행보고",
     "ko_before": "현재까지는 계획대로 진행 중입니다.",
     "priority": "essential",
-    "legacyPriorityDefaults": ["important"],
+    "legacyPriorityDefaults": [
+      "important"
+    ],
     "purpose": "계획 대비 진행 보고",
-    "criteria": [1, 2],
+    "criteria": [
+      1,
+      2
+    ],
     "reason": "업무가 계획대로 진행 중이라는 상태를 간결하게 알려 일정 점검과 협업자의 판단을 돕는다. 진행 정상 여부는 단순 업데이트 약속이나 지연 통보로 대체되지 않는 대표적인 상태 보고다.",
     "coverageAreas": [
       "progress"
@@ -2333,9 +2354,14 @@ var items=[
     "context": "오늘완료 불가가능성알림",
     "ko_before": "오늘 안에 끝내기 어려울 것 같습니다.",
     "priority": "essential",
-    "legacyPriorityDefaults": ["important"],
+    "legacyPriorityDefaults": [
+      "important"
+    ],
     "purpose": "당일 완료 위험 보고",
-    "criteria": [1, 2],
+    "criteria": [
+      1,
+      2
+    ],
     "reason": "오늘 끝내지 못할 가능성을 미리 알려 마감 기대와 대체 계획을 조정하게 한다. 이미 발생한 일반 지연 보고와 달리 완료 전 위험을 앞서 알리는 목적이 뚜렷하다.",
     "coverageAreas": [
       "progress"
