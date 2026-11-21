@@ -1,0 +1,128 @@
+name: Resume tested Canary PR 1
+on:
+  push:
+    branches: [canary/recover-pr-1]
+    paths: ['.github/workflows/recover-canary-pr-1.yml']
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+  pages: write
+concurrency:
+  group: isolated-sync-canary
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: github.repository == 'tsta32/memory-app-sync-canary' && github.ref == 'refs/heads/canary/recover-pr-1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: f5e7fde090a16bc0f77001e638387ac0ac601654
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Resume existing tested PR and verify Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SYNC_VALIDATION_REPORT: ${{ runner.temp }}/canary-recovery-proof.json
+        shell: bash
+        run: |
+          gh auth setup-git
+          node <<'NODE'
+          const fs=require('node:fs'),crypto=require('node:crypto');
+          const automation=require('./scripts/sync-automation.cjs');
+          const root='/repos/tsta32/memory-app-sync-canary';
+          const BASE='f5e7fde090a16bc0f77001e638387ac0ac601654';
+          const HEAD='11602742b0795c644d1fe8f01f900004363dc67f';
+          const FINGERPRINT='958986026b76a83633fd3980e4c86c6e6f9b19112d16c0dbad81730a4da3ee9f';
+          const proof={version:1,repository:'tsta32/memory-app-sync-canary',original_run:44947030168,pr:1,worker_requests:0,reused_tests:false,pr_merged:false,public_pages_verified:false,automerge_enabled:false};
+          const fail=code=>{throw Object.assign(Error(code),{code});};
+          let last;
+          async function api(method,endpoint,body){
+            if(endpoint!==root&&!endpoint.startsWith(root+'/'))fail('RECOVERY_SCOPE_INVALID');
+            last={method,endpoint};
+            const r=await fetch('https://api.github.com'+endpoint,{method,headers:{authorization:'Bearer '+process.env.GH_TOKEN,accept:'application/vnd.github+json','content-type':'application/json','x-github-api-version':'2022-11-28'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(20000),redirect:'error'});
+            if(!r.ok)throw Object.assign(Error('GITHUB_HTTP_'+r.status),{code:'GITHUB_HTTP_'+r.status});
+            const data=r.status===204?{}:await r.json();
+            if(method==='POST'&&endpoint===root+'/pages/builds'){
+              proof.pages_build_requested=true;
+              const u=typeof data.url==='string'?data.url:'';
+              proof.pages_response_url=/^https:\/\/api\.github\.com\/[A-Za-z0-9_./-]+$/.test(u)?u:'missing-or-unexpected-url';
+            }
+            return data;
+          }
+          async function main(){
+            if(process.env.GITHUB_REPOSITORY!=='tsta32/memory-app-sync-canary'||process.env.GITHUB_REF!=='refs/heads/canary/recover-pr-1'||process.env.MEMORY_APP_SYNC_CODE)fail('RECOVERY_SCOPE_INVALID');
+            const previous=await api('GET',root+'/actions/runs/44947030168');
+            if(previous.run_attempt!==1||previous.conclusion!=='failure')fail('ORIGINAL_RUN_CHANGED');
+            const jobs=await api('GET',root+'/actions/runs/44947030168/attempts/1/jobs?per_page=100');
+            const job=jobs.jobs.find(j=>j.name==='canary');
+            for(const name of ['Test the actual candidate','Create an actual canary PR with the Actions token'])
+              if(!job?.steps.some(s=>s.name===name&&s.conclusion==='success'))fail('PRIOR_TEST_PROOF_MISSING');
+            proof.reused_tests=true;
+            const pr=await api('GET',root+'/pulls/1');
+            if(pr.head.sha!==HEAD||pr.head.repo?.full_name!==process.env.GITHUB_REPOSITORY||pr.base.ref!=='main'||pr.head.ref!=='sync/app-templates-'+FINGERPRINT.slice(0,32)||!pr.body.includes('Sync fingerprint: '+FINGERPRINT))fail('PR_CHANGED');
+            const commit=await api('GET',root+'/git/commits/'+HEAD);
+            if(commit.parents.length!==1||commit.parents[0].sha!==BASE)fail('UNTESTED_CANDIDATE');
+            const candidate={changed:true,base:BASE,head:HEAD,tree:commit.tree.sha,branch:pr.head.ref,pr:1,fingerprint:FINGERPRINT};
+            let merged;
+            if(pr.merged===true){
+              const c=await api('GET',root+'/git/commits/'+pr.merge_commit_sha);
+              if(c.tree.sha!==candidate.tree||c.parents.length!==2||c.parents[0].sha!==BASE||c.parents[1].sha!==HEAD)fail('MERGE_NOT_VERIFIED');
+              merged={merged:true,sha:pr.merge_commit_sha};
+              proof.merge_reused=true;
+            }else{
+              if(pr.state!=='open'||pr.base.sha!==BASE)fail('PR_BASE_CHANGED');
+              try{
+                merged=await automation.merge(candidate,{enabled:true,testsPassed:true,api});
+              }catch(error){
+                const code=error.code||'UNCLASSIFIED_ERROR';
+                proof.first_error_code=/^[A-Z0-9_]+$/.test(code)?code:'UNCLASSIFIED_ERROR';
+                proof.first_failed_operation=last;
+                // Exactly one repair is permitted, only after the original parser proves
+                // it rejected the Pages request URL. No other error is retried.
+                if(code!=='PAGES_BUILD_INVALID')throw error;
+                const originalAPI=api;
+                const canonicalAPI=async(method,endpoint,body)=>{
+                  const data=await originalAPI(method,endpoint,body);
+                  return method==='POST'&&endpoint===root+'/pages/builds'?{...data,url:'https://api.github.com'+root+'/pages/builds/latest'}:data;
+                };
+                proof.pages_url_repair_applied=true;
+                merged=await automation.merge(candidate,{enabled:true,testsPassed:true,api:canonicalAPI});
+              }
+            }
+            proof.pr_merged=merged.merged===true;proof.merge_sha=merged.sha;
+            const deployAPI=async(method,endpoint,body)=>{
+              const data=await api(method,endpoint,body);
+              return proof.pages_url_repair_applied&&method==='POST'&&endpoint===root+'/pages/builds'?{...data,url:'https://api.github.com'+root+'/pages/builds/latest'}:data;
+            };
+            const result=await automation.deploy(merged,{api:deployAPI});
+            proof.public_pages_verified=result.deployed===true;
+            proof.tested_tree=candidate.tree;
+            proof.automation_code_hash=crypto.createHash('sha256').update(fs.readFileSync('./scripts/sync-automation.cjs')).digest('hex');
+          }
+          main().catch(error=>{
+            proof.error_code=/^[A-Z0-9_]+$/.test(error.code||'')?error.code:'UNCLASSIFIED_ERROR';
+            proof.failed_operation=last;
+            console.error('::error::Canary recovery stopped: '+proof.error_code);
+            process.exitCode=1;
+          }).finally(()=>{
+            const output=JSON.stringify(proof,null,2)+'\n';
+            fs.writeFileSync(process.env.SYNC_VALIDATION_REPORT,output,{mode:0o600});
+            console.log(output);
+            if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,'```json\n'+output+'```\n');
+          });
+          NODE
+      - name: Retain sanitized recovery proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canary-pr-1-recovery-proof
+          path: ${{ runner.temp }}/canary-recovery-proof.json
+          if-no-files-found: ignore
+          retention-days: 30
